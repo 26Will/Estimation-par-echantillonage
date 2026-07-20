@@ -1,0 +1,124 @@
+install.packages("dplyr")
+library(dplyr)
+
+star <- read.csv("Z:/SAE Estimation 2/Star39552_balanced.csv")
+amag30 <- read.table(file = "C:/Users/Florent/Desktop/Sae echantillonage/amag30_3.txt")
+amag100 <- read.table(file = "C:/Users/Florent/Desktop/Sae echantillonage/amag100_3.txt")
+
+# --- Paramètres ---
+n <- 30
+moy_th <- 16
+moy_obs <- mean(amag100$V1)
+sigma_obs <- sqrt(var(amag100$V1))
+
+# --- Intervalles de confiance ---
+alpha5 <- 0.05
+alpha1 <- 0.01
+quant5 <- qnorm(1 - alpha5 / 2)
+quant1 <- qnorm(1 - alpha1 / 2)
+
+borne_inf5 <- moy_obs - quant5 * (sigma_obs / sqrt(n))
+borne_sup5 <- moy_obs + quant5 * (sigma_obs / sqrt(n))
+borne_inf1 <- moy_obs - quant1 * (sigma_obs / sqrt(n))
+borne_sup1 <- moy_obs + quant1 * (sigma_obs / sqrt(n))
+
+# --- Statistique de test et p-valeur ---
+tn <- (sqrt(n) * (moy_obs - moy_th)) / sigma_obs
+pvaleur <- 2 * (1 - pnorm(abs(tn)))
+
+# --- Exploration des données ---
+boxplot(amag100$V1, main = "Boite a moustache Amag100")
+hist(ama100$V1, main = "Histogramme Amag100", freq = FALSE)
+summary(object = amag100)
+
+# --- Tests t ---
+t.test(amag100$V1, mu = 16, conf.level = 1-alpha5)
+t.test(amag100$V1, mu = 16, conf.level = 1-alpha1)
+
+# --- Tracé de la densité de la statistique de test sous H0 ---
+x <- seq(-4, 4, length = 1000)
+
+plot(x, dnorm(x, mean = 0, sd = 1),
+     type = "l", lwd = 2,
+     xlab = "Valeur de la statistique de test",
+     ylab = "Densité",
+     main = "Statistique de test sous H0 ~ N(0,1)\n(test bilatéral sur la moyenne)")
+
+# Zone de rejet à gauche (alpha = 1%)
+x_rejet_gauche1 <- seq(-4, -quant1, length = 200)
+polygon(c(-4, x_rejet_gauche1, -quant1),
+        c(0, dnorm(x_rejet_gauche1), 0),
+        col = rgb(0.6, 0, 0, 0.4), border = NA)
+
+# Zone de rejet à droite (alpha = 1%)
+x_rejet_droite1 <- seq(quant1, 4, length = 200)
+polygon(c(quant1, x_rejet_droite1, 4),
+        c(0, dnorm(x_rejet_droite1), 0),
+        col = rgb(0.6, 0, 0, 0.4), border = NA)
+
+# Zone de rejet à gauche (alpha = 5%)
+x_rejet_gauche5 <- seq(-quant1, -quant5, length = 200)
+polygon(c(-quant1, x_rejet_gauche5, -quant5),
+        c(0, dnorm(x_rejet_gauche5), 0),
+        col = rgb(1, 0.8, 0.8, 0.5), border = NA)
+
+# Zone de rejet à droite (alpha = 5%)
+x_rejet_droite5 <- seq(quant5, quant1, length = 200)
+polygon(c(quant5, x_rejet_droite5, quant1),
+        c(0, dnorm(x_rejet_droite5), 0),
+        col = rgb(1, 0.8, 0.8, 0.5), border = NA)
+
+# Zone p-valeur à gauche (en bleu clair)
+x_pval_gauche <- seq(-4, -abs(tn), length = 200)
+polygon(c(-4, x_pval_gauche, -abs(tn)),
+        c(0, dnorm(x_pval_gauche), 0),
+        col = rgb(0, 0, 1, 0.25), border = NA)
+
+# Zone p-valeur à droite (en bleu clair)
+x_pval_droite <- seq(abs(tn), 4, length = 200)
+polygon(c(abs(tn), x_pval_droite, 4),
+        c(0, dnorm(x_pval_droite), 0),
+        col = rgb(0, 0, 1, 0.25), border = NA)
+
+# Quantiles théoriques en rouge (alpha = 5%)
+abline(v =  quant5, col = "red",     lwd = 2, lty = 2)
+abline(v = -quant5, col = "red",     lwd = 2, lty = 2)
+
+# Quantiles théoriques en rouge foncé (alpha = 1%)
+abline(v =  quant1, col = "darkred", lwd = 2, lty = 3)
+abline(v = -quant1, col = "darkred", lwd = 2, lty = 3)
+
+# Valeur observée de la statistique de test en bleu
+abline(v =  tn, col = "blue", lwd = 2)
+abline(v = -tn, col = "blue", lwd = 2, lty = 4)
+
+# Légende
+legend("topright",
+       legend = c(
+         paste0("Quantiles ±", round(quant5, 3), " (α=5%)"),
+         paste0("Quantiles ±", round(quant1, 3), " (α=1%)"),
+         paste0("Tobs = ", round(tn, 3)),
+         paste0("p-valeur = ", round(pvaleur, 4)),
+         "Zone de rejet (α=5%)",
+         "Zone de rejet (α=1%)"
+       ),
+       col = c("red", "darkred", "blue", rgb(0, 0, 1, 0.5),
+               rgb(1, 0.6, 0.6), rgb(0.6, 0, 0, 0.7)),
+       lwd = c(2, 2, 2, 8, 8, 8),
+       lty = c(2, 3, 1, 1, 1, 1),
+       cex = 0.85)
+
+# Annotations textuelles
+text( 0,   0.15, "Non-rejet de H0", col = "darkgreen", cex = 1.1, font = 2)
+text( 3.2, 0.05, "Rejet\nH0",       col = "red",       cex = 0.9)
+text(-3.2, 0.05, "Rejet\nH0",       col = "red",       cex = 0.9)
+
+# --- Affichage des résultats numériques ---
+cat(paste("n =", n, "| Moy observée =", round(moy_obs, 4), "| Moy H0 =", moy_th, "\n"))
+cat(paste("Statistique de test Tobs =", round(tn, 4), "\n"))
+cat(paste("Quantile α=5% :", round(quant5, 4), "| Quantile α=1% :", round(quant1, 4), "\n"))
+cat(paste("IC 95% : [", round(borne_inf5, 4), ";", round(borne_sup5, 4), "]\n"))
+cat(paste("IC 99% : [", round(borne_inf1, 4), ";", round(borne_sup1, 4), "]\n"))
+cat(paste("p-valeur =", round(pvaleur, 6), "\n"))
+cat(paste("Décision α=5% : H0", ifelse(abs(tn) > quant5, "rejetée", "non rejetée"), "\n"))
+cat(paste("Décision α=1% : H0", ifelse(abs(tn) > quant1, "rejetée", "non rejetée"), "\n"))
